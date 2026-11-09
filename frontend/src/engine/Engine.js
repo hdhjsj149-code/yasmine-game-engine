@@ -110,6 +110,103 @@ YGE.Engine = class Engine {
 
         this.testObject = box;
         this.shadows = shadows;
+        // Environment Materials
+
+const trunkMaterial = new BABYLON.StandardMaterial(
+    "YGE_TrunkMaterial", scene
+);
+trunkMaterial.diffuseColor = new BABYLON.Color3(
+    0.30, 0.16, 0.08
+);
+
+const leafMaterial = new BABYLON.StandardMaterial(
+    "YGE_LeafMaterial", scene
+);
+leafMaterial.diffuseColor = new BABYLON.Color3(
+    0.12, 0.38, 0.13
+);
+
+const rockMaterial = new BABYLON.StandardMaterial(
+    "YGE_RockMaterial", scene
+);
+rockMaterial.diffuseColor = new BABYLON.Color3(
+    0.38, 0.40, 0.42
+);
+
+// Tree Positions
+const treePositions = [
+    [-5, -4], [-8, 2], [-4, 6],
+    [5, -5], [8, 1], [5, 7],
+    [-9, -7], [9, -7]
+];
+
+// Create Trees
+treePositions.forEach((pos, i) => {
+
+    const trunk = BABYLON.MeshBuilder.CreateCylinder(
+        "YGE_TreeTrunk_" + i,
+        {
+            height: 2.5,
+            diameter: 0.45
+        },
+        scene
+    );
+
+    trunk.position.set(pos[0], 1.25, pos[1]);
+    trunk.material = trunkMaterial;
+
+    const leaves = BABYLON.MeshBuilder.CreateSphere(
+        "YGE_TreeLeaves_" + i,
+        {
+            diameter: 2.5,
+            segments: 8
+        },
+        scene
+    );
+
+    leaves.position.set(pos[0], 3, pos[1]);
+    leaves.scaling.y = 1.3;
+    leaves.material = leafMaterial;
+
+    shadows.addShadowCaster(trunk);
+    shadows.addShadowCaster(leaves);
+});
+
+// Rock Positions
+const rockPositions = [
+    [-3, -5], [3, 5], [-7, 5],
+    [7, -4], [-5, 2], [4, -7]
+];
+
+// Create Rocks
+rockPositions.forEach((pos, i) => {
+
+    const rock = BABYLON.MeshBuilder.CreateSphere(
+        "YGE_Rock_" + i,
+        {
+            diameter: 1,
+            segments: 6
+        },
+        scene
+    );
+
+    rock.position.set(
+        pos[0],
+        0.3,
+        pos[1]
+    );
+
+    rock.scaling.set(
+        1.2,
+        0.7,
+        0.9
+    );
+
+    rock.rotation.y = Math.random() * Math.PI;
+    rock.material = rockMaterial;
+
+    shadows.addShadowCaster(rock);
+});
     }
 
     start() {
