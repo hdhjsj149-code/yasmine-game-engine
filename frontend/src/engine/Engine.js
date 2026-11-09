@@ -248,7 +248,75 @@ YGE.Engine = class Engine {
         this.speed = 0.10;
     }
 
-    createControls() {
+    createControls() 
+         // Landscape Mode Button
+
+const landscapeButton = document.createElement("button");
+
+landscapeButton.textContent = "تشغيل الوضع الأفقي";
+
+landscapeButton.style.cssText = `
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+    padding: 12px 16px;
+    background: #172b45;
+    color: white;
+    border: 1px solid #ffffff66;
+    border-radius: 10px;
+    font-size: 14px;
+`;
+
+document.body.appendChild(landscapeButton);
+
+landscapeButton.addEventListener("click", async () => {
+    try {
+        if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen();
+        }
+
+        if (screen.orientation?.lock) {
+            await screen.orientation.lock("landscape");
+        }
+
+        landscapeButton.textContent = "الوضع الأفقي مفعل";
+    } catch (error) {
+        landscapeButton.textContent = "لف الهاتف أفقياً";
+    }
+});
+
+// Portrait Warning
+const orientationStyle = document.createElement("style");
+
+orientationStyle.textContent = `
+    #ygePortraitWarning {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: #101722;
+        color: white;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font: 20px Arial;
+    }
+
+    @media (orientation: portrait) {
+        #ygePortraitWarning {
+            display: flex;
+        }
+    }
+`;
+
+document.head.appendChild(orientationStyle);
+
+const warning = document.createElement("div");
+warning.id = "ygePortraitWarning";
+warning.textContent = "يرجى تدوير الهاتف للوضع الأفقي";
+document.body.appendChild(warning);
+{
         window.addEventListener("keydown", e => {
             this.keys[e.key.toLowerCase()] = true;
         });
@@ -334,40 +402,41 @@ YGE.Engine = class Engine {
     }
 
     updatePlayer() {
-        let x = this.joystick.x;
-        let z = this.joystick.y;
+    let x = this.joystick.x;
+    let z = this.joystick.y;
 
-        if (this.keys["w"] || this.keys["arrowup"]) z -= 1;
-        if (this.keys["s"] || this.keys["arrowdown"]) z += 1;
-        if (this.keys["a"] || this.keys["arrowleft"]) x -= 1;
-        if (this.keys["d"] || this.keys["arrowright"]) x += 1;
+    if (this.keys["w"] || this.keys["arrowup"]) z -= 1;
+    if (this.keys["s"] || this.keys["arrowdown"]) z += 1;
+    if (this.keys["a"] || this.keys["arrowleft"]) x -= 1;
+    if (this.keys["d"] || this.keys["arrowright"]) x += 1;
 
-        const length = Math.hypot(x, z);
+    const length = Math.hypot(x, z);
 
-        if (length < 0.1) return;
+    if (length < 0.1) return;
 
-        x /= length;
-        z /= length;
+    x /= length;
+    z /= length;
 
-        const alpha = this.camera.alpha;
+    const alpha = this.camera.alpha;
 
-        const forwardX = -Math.sin(alpha);
-        const forwardZ = -Math.cos(alpha);
+    // Correct camera-relative directions
+    const forwardX = Math.cos(alpha);
+    const forwardZ = -Math.sin(alpha);
 
-        const rightX = Math.cos(alpha);
-        const rightZ = -Math.sin(alpha);
+    const rightX = -Math.sin(alpha);
+    const rightZ = -Math.cos(alpha);
 
-        const moveX = rightX * x - forwardX * z;
-        const moveZ = rightZ * x - forwardZ * z;
+    const moveX = rightX * x - forwardX * z;
+    const moveZ = rightZ * x - forwardZ * z;
 
-        this.player.position.x += moveX * this.speed;
-        this.player.position.z += moveZ * this.speed;
+    this.player.position.x += moveX * this.speed;
+    this.player.position.z += moveZ * this.speed;
 
-        this.player.rotation.y = Math.atan2(
-            moveX,
-            moveZ
-        );
-    }
+    this.player.rotation.y = Math.atan2(
+        moveX,
+        moveZ
+    );
+}
 
     start() {
         this.engine.runRenderLoop(() => {
