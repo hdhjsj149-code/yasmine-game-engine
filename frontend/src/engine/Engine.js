@@ -1,18 +1,33 @@
+
 window.YGE = window.YGE || {};
 
 YGE.Engine = class Engine {
     constructor(canvas) {
         this.canvas = canvas;
-        this.engine = new BABYLON.Engine(canvas, true);
+
+        this.engine = new BABYLON.Engine(
+            canvas,
+            true,
+            {
+                preserveDrawingBuffer: true,
+                stencil: true
+            }
+        );
+
         this.scene = new BABYLON.Scene(this.engine);
 
         this.keys = {};
         this.joystick = { x: 0, y: 0 };
+        this.speed = 0.10;
 
         this.setupScene();
         this.createPlayer();
         this.createControls();
     }
+
+    // =========================
+    // SCENE SETUP
+    // =========================
 
     setupScene() {
         const scene = this.scene;
@@ -21,7 +36,6 @@ YGE.Engine = class Engine {
             0.45, 0.68, 0.9, 1
         );
 
-        // Graphics settings
         this.engine.setHardwareScalingLevel(1);
 
         // Camera
@@ -39,6 +53,7 @@ YGE.Engine = class Engine {
         this.camera.lowerBetaLimit = 0.2;
         this.camera.upperBetaLimit = 1.5;
         this.camera.wheelPrecision = 50;
+
         this.camera.attachControl(this.canvas, true);
 
         // Lighting
@@ -57,7 +72,7 @@ YGE.Engine = class Engine {
         );
 
         sun.position.set(20, 30, -20);
-        sun.intensity = 1.0;
+        sun.intensity = 1;
 
         this.shadows = new BABYLON.ShadowGenerator(
             1024,
@@ -67,7 +82,7 @@ YGE.Engine = class Engine {
         this.shadows.useBlurExponentialShadowMap = true;
         this.shadows.blurKernel = 16;
 
-        // Large World Ground
+        // Ground
         const ground = BABYLON.MeshBuilder.CreateGround(
             "YGE_Ground",
             {
@@ -91,15 +106,19 @@ YGE.Engine = class Engine {
         ground.material = groundMat;
         ground.receiveShadows = true;
 
-        // Environment
         this.createEnvironment();
     }
+
+    // =========================
+    // ENVIRONMENT
+    // =========================
 
     createEnvironment() {
         const scene = this.scene;
 
         const trunkMat = new BABYLON.StandardMaterial(
-            "TreeTrunk", scene
+            "TreeTrunk",
+            scene
         );
 
         trunkMat.diffuseColor = new BABYLON.Color3(
@@ -107,7 +126,8 @@ YGE.Engine = class Engine {
         );
 
         const leafMat = new BABYLON.StandardMaterial(
-            "TreeLeaves", scene
+            "TreeLeaves",
+            scene
         );
 
         leafMat.diffuseColor = new BABYLON.Color3(
@@ -115,13 +135,15 @@ YGE.Engine = class Engine {
         );
 
         const rockMat = new BABYLON.StandardMaterial(
-            "RockMaterial", scene
+            "RockMaterial",
+            scene
         );
 
         rockMat.diffuseColor = new BABYLON.Color3(
             0.38, 0.40, 0.42
         );
 
+        // Trees
         for (let i = 0; i < 35; i++) {
             const angle = Math.random() * Math.PI * 2;
             const distance = 12 + Math.random() * 65;
@@ -158,6 +180,7 @@ YGE.Engine = class Engine {
             this.shadows.addShadowCaster(leaves);
         }
 
+        // Rocks
         for (let i = 0; i < 40; i++) {
             const rock = BABYLON.MeshBuilder.CreateSphere(
                 "Rock_" + i,
@@ -177,16 +200,16 @@ YGE.Engine = class Engine {
                 Math.sin(angle) * distance
             );
 
-            rock.scaling.set(
-                1.2,
-                0.7,
-                0.9
-            );
-
+            rock.scaling.set(1.2, 0.7, 0.9);
             rock.material = rockMat;
+
             this.shadows.addShadowCaster(rock);
         }
     }
+
+    // =========================
+    // PLAYER
+    // =========================
 
     createPlayer() {
         const scene = this.scene;
@@ -245,78 +268,88 @@ YGE.Engine = class Engine {
 
         this.player.position.set(0, 0, 0);
 
-        this.speed = 0.10;
+        this.camera.target = new BABYLON.Vector3(
+            0, 1.3, 0
+        );
     }
 
-    createControls() 
-         // Landscape Mode Button
+    // =========================
+    // CONTROLS
+    // =========================
 
-const landscapeButton = document.createElement("button");
+    createControls() {
 
-landscapeButton.textContent = "تشغيل الوضع الأفقي";
+        // Landscape Button
+        const landscapeButton = document.createElement("button");
 
-landscapeButton.style.cssText = `
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 100;
-    padding: 12px 16px;
-    background: #172b45;
-    color: white;
-    border: 1px solid #ffffff66;
-    border-radius: 10px;
-    font-size: 14px;
-`;
+        landscapeButton.textContent = "تشغيل الوضع الأفقي";
 
-document.body.appendChild(landscapeButton);
+        landscapeButton.style.cssText = `
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            padding: 12px 16px;
+            background: #172b45;
+            color: white;
+            border: 1px solid #ffffff66;
+            border-radius: 10px;
+            font-size: 14px;
+        `;
 
-landscapeButton.addEventListener("click", async () => {
-    try {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        }
+        document.body.appendChild(landscapeButton);
 
-        if (screen.orientation?.lock) {
-            await screen.orientation.lock("landscape");
-        }
+        landscapeButton.addEventListener("click", async () => {
+            try {
+                if (!document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen();
+                }
 
-        landscapeButton.textContent = "الوضع الأفقي مفعل";
-    } catch (error) {
-        landscapeButton.textContent = "لف الهاتف أفقياً";
-    }
-});
+                if (screen.orientation?.lock) {
+                    await screen.orientation.lock("landscape");
+                }
 
-// Portrait Warning
-const orientationStyle = document.createElement("style");
+                landscapeButton.textContent = "الوضع الأفقي مفعل";
 
-orientationStyle.textContent = `
-    #ygePortraitWarning {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 90;
-        background: #101722;
-        color: white;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font: 20px Arial;
-    }
+            } catch (error) {
+                landscapeButton.textContent = "لف الهاتف أفقياً";
+            }
+        });
 
-    @media (orientation: portrait) {
-        #ygePortraitWarning {
-            display: flex;
-        }
-    }
-`;
+        // Portrait Warning
+        const orientationStyle = document.createElement("style");
 
-document.head.appendChild(orientationStyle);
+        orientationStyle.textContent = `
+            #ygePortraitWarning {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 90;
+                background: #101722;
+                color: white;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font: 20px Arial;
+            }
 
-const warning = document.createElement("div");
-warning.id = "ygePortraitWarning";
-warning.textContent = "يرجى تدوير الهاتف للوضع الأفقي";
-document.body.appendChild(warning);
-{
+            @media (orientation: portrait) {
+                #ygePortraitWarning {
+                    display: flex;
+                }
+            }
+        `;
+
+        document.head.appendChild(orientationStyle);
+
+        const warning = document.createElement("div");
+
+        warning.id = "ygePortraitWarning";
+        warning.textContent = "يرجى تدوير الهاتف للوضع الأفقي";
+
+        document.body.appendChild(warning);
+
+        // Keyboard
         window.addEventListener("keydown", e => {
             this.keys[e.key.toLowerCase()] = true;
         });
@@ -329,29 +362,31 @@ document.body.appendChild(warning);
         const base = document.createElement("div");
 
         base.style.cssText = `
-            position:fixed;
-            bottom:35px;
-            left:25px;
-            width:125px;
-            height:125px;
-            border-radius:50%;
-            background:#ffffff33;
-            border:2px solid #ffffff88;
-            z-index:10;
-            touch-action:none;
+            position: fixed;
+            bottom: 35px;
+            left: 25px;
+            width: 125px;
+            height: 125px;
+            border-radius: 50%;
+            background: #ffffff33;
+            border: 2px solid #ffffff88;
+            z-index: 95;
+            touch-action: none;
+            user-select: none;
         `;
 
         const knob = document.createElement("div");
 
         knob.style.cssText = `
-            position:absolute;
-            width:48px;
-            height:48px;
-            left:36px;
-            top:36px;
-            border-radius:50%;
-            background:#ffffffcc;
-            box-shadow:0 2px 8px #0005;
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            left: 36px;
+            top: 36px;
+            border-radius: 50%;
+            background: #ffffffcc;
+            box-shadow: 0 2px 8px #0005;
+            pointer-events: none;
         `;
 
         base.appendChild(knob);
@@ -363,11 +398,17 @@ document.body.appendChild(warning);
         const updateJoystick = e => {
             const rect = base.getBoundingClientRect();
 
-            const dx = e.clientX - (rect.left + rect.width / 2);
-            const dy = e.clientY - (rect.top + rect.height / 2);
+            const dx = e.clientX - (
+                rect.left + rect.width / 2
+            );
+
+            const dy = e.clientY - (
+                rect.top + rect.height / 2
+            );
 
             const max = 38;
             const length = Math.hypot(dx, dy);
+
             const scale = length > max ? max / length : 1;
 
             const x = dx * scale;
@@ -394,52 +435,67 @@ document.body.appendChild(warning);
         const reset = () => {
             this.joystick.x = 0;
             this.joystick.y = 0;
+
             knob.style.transform = "translate(0px, 0px)";
         };
 
         base.addEventListener("pointerup", reset);
         base.addEventListener("pointercancel", reset);
+        base.addEventListener("lostpointercapture", reset);
     }
 
+    // =========================
+    // PLAYER MOVEMENT
+    // =========================
+
     updatePlayer() {
-    let x = this.joystick.x;
-    let z = this.joystick.y;
+        let x = this.joystick.x;
+        let z = this.joystick.y;
 
-    if (this.keys["w"] || this.keys["arrowup"]) z -= 1;
-    if (this.keys["s"] || this.keys["arrowdown"]) z += 1;
-    if (this.keys["a"] || this.keys["arrowleft"]) x -= 1;
-    if (this.keys["d"] || this.keys["arrowright"]) x += 1;
+        if (this.keys["w"] || this.keys["arrowup"]) z -= 1;
+        if (this.keys["s"] || this.keys["arrowdown"]) z += 1;
+        if (this.keys["a"] || this.keys["arrowleft"]) x -= 1;
+        if (this.keys["d"] || this.keys["arrowright"]) x += 1;
 
-    const length = Math.hypot(x, z);
+        const length = Math.hypot(x, z);
 
-    if (length < 0.1) return;
+        if (length < 0.1) return;
 
-    x /= length;
-    z /= length;
+        x /= length;
+        z /= length;
 
-    const alpha = this.camera.alpha;
+        const alpha = this.camera.alpha;
 
-    // Correct camera-relative directions
-    const forwardX = Math.cos(alpha);
-    const forwardZ = -Math.sin(alpha);
+        const forwardX = Math.cos(alpha);
+        const forwardZ = -Math.sin(alpha);
 
-    const rightX = -Math.sin(alpha);
-    const rightZ = -Math.cos(alpha);
+        const rightX = -Math.sin(alpha);
+        const rightZ = -Math.cos(alpha);
 
-    const moveX = rightX * x - forwardX * z;
-    const moveZ = rightZ * x - forwardZ * z;
+        const moveX = rightX * x - forwardX * z;
+        const moveZ = rightZ * x - forwardZ * z;
 
-    this.player.position.x += moveX * this.speed;
-    this.player.position.z += moveZ * this.speed;
+        const delta = Math.min(
+            this.engine.getDeltaTime() / 16.67,
+            3
+        );
 
-    this.player.rotation.y = Math.atan2(
-        moveX,
-        moveZ
-    );
-}
+        this.player.position.x += moveX * this.speed * delta;
+        this.player.position.z += moveZ * this.speed * delta;
+
+        this.player.rotation.y = Math.atan2(
+            moveX,
+            moveZ
+        );
+    }
+
+    // =========================
+    // START ENGINE
+    // =========================
 
     start() {
         this.engine.runRenderLoop(() => {
+
             this.updatePlayer();
 
             this.camera.target.copyFrom(
@@ -456,7 +512,13 @@ document.body.appendChild(warning);
         });
     }
 
+    // =========================
+    // STOP ENGINE
+    // =========================
+
     stop() {
         this.engine.stopRenderLoop();
+        this.scene.dispose();
+        this.engine.dispose();
     }
 };
